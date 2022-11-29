@@ -1,9 +1,18 @@
 __target__: definitions.BirdClassifierArguments
 training:
   __target__: definitions.TrainingArguments
+  lightning_checkpoint:
+    dirpath: "./experiments/original_code"
+    filename: Net-{epoch:02d}
+    save_last: true
+    save_on_train_epoch_end: true
+    verbose: true
+    monitor: validation/accuracy/classification
+    mode: max
+  run_name: original_code
   seed: 42
   batch_size: 64
-  num_workers: 4
+  num_workers: 8
   learning_rate: 1e-1
   epochs: 10
   momentum: 0.5

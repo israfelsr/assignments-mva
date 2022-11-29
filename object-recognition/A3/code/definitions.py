@@ -7,6 +7,7 @@ from omegaconf import MISSING
 @dataclass
 class TrainingArguments:
     seed: int = -1
+    run_name: str = MISSING
     batch_size: int = 64
     num_workers: int = 4
     epochs: int = 10

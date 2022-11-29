@@ -5,12 +5,12 @@ import PIL.Image as Image
 
 import torch
 
-from model import Net
+from model import NetLightningModule
 
 parser = argparse.ArgumentParser(description='RecVis A3 evaluation script')
 parser.add_argument('--data', type=str, default='bird_dataset', metavar='D',
                     help="folder where data is located. test_images/ need to be found in the folder")
-parser.add_argument('--model', type=str, metavar='M',
+parser.add_argument('--model_checkpoint', type=str, metavar='M',
                     help="the model file to be evaluated. Usually it is of the form model_X.pth")
 parser.add_argument('--outfile', type=str, default='experiment/kaggle.csv', metavar='D',
                     help="name of the output csv file")
@@ -18,9 +18,7 @@ parser.add_argument('--outfile', type=str, default='experiment/kaggle.csv', meta
 args = parser.parse_args()
 use_cuda = torch.cuda.is_available()
 
-state_dict = torch.load(args.model)
-model = Net()
-model.load_state_dict(state_dict)
+model = NetLightningModule().load_from_checkpoint(args.model_checkpoint)
 model.eval()
 if use_cuda:
     print('Using GPU')
@@ -54,6 +52,3 @@ for f in tqdm(os.listdir(test_dir)):
 output_file.close()
 
 print("Succesfully wrote " + args.outfile + ', you can upload this file to the kaggle competition website')
-        
-
-

@@ -29,10 +29,15 @@ class Net(nn.Module):
 # I wanted to practice with pytorch lightning so I will be using it instead of plain pytroch.
 class NetLightningModule(pl.LightningModule):
 
-    def __init__(self,
-                 num_classes: int,
-                 learning_rate: float = 0.01,
-                 momentum: float = 0.9):
+    def __init__(
+        self,
+        num_classes: int = 20,
+        learning_rate: float = 0.01,
+        momentum: float = 0.9,
+        adam_betas: float = 0.9,
+        adam_eps: float = 0.9,
+        adam_weight_decay: float = 0.9,
+    ):
         super(NetLightningModule, self).__init__()
         self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
@@ -44,6 +49,9 @@ class NetLightningModule(pl.LightningModule):
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
         self.learning_rate = learning_rate
         self.momentum = momentum
+        self.adam_betas = adam_betas
+        self.adam_eps = adam_eps
+        self.adam_weight_decay = adam_weight_decay
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
@@ -54,9 +62,12 @@ class NetLightningModule(pl.LightningModule):
         return self.fc2(x)
 
     def configure_optimizers(self):
-        return torch.optim.SGD(self.parameters(),
-                               lr=self.learning_rate,
-                               momentum=self.momentum)
+        #return torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=self.momentum)
+        return torch.optim.AdamW(self.parameters(),
+                                 lr=self.learning_rate,
+                                 betas=self.adam_betas,
+                                 eps=self.adam_eps,
+                                 weight_decay=self.adam_weight_decay)
 
     def training_step(self, batch, batch_idx):
         image, label = batch
