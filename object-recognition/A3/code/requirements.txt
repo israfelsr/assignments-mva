@@ -17,7 +17,7 @@ idna==3.4
 importlib-resources==5.10.0
 lightning-utilities==0.3.0
 multidict==6.0.2
-numpy==1.23.5
+numpy==1.21.6
 omegaconf==2.2.3
 packaging==21.3
 pathtools==0.1.2
