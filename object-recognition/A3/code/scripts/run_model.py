@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 from data import data_transforms
 from definitions import BirdClassifierArguments
-from model import NetLightningModule
+from model import BirdClassifierLightningModule, BCNNLightningModule
 from utils import build_config
 
 
@@ -36,7 +36,7 @@ def main():
     print(f"samples = {len(train_loader) * config.training.batch_size}")
 
     # Creating the model
-    model = NetLightningModule(
+    model = BCNNLightningModule(
         num_classes=config.datasets.num_classes,
         learning_rate=config.training.learning_rate,
         adam_eps=config.training.adam_eps,
@@ -51,6 +51,7 @@ def main():
     trainer = Trainer(
         accelerator="auto",
         max_epochs=config.training.epochs,
+        #max_epochs=1,
         logger=wandb_logger,
         log_every_n_steps=10,
         callbacks=[checkpoint_callback],

@@ -1,5 +1,5 @@
 export PYTHONPATH=$(pwd)
 python scripts/evaluate.py\
     --data=./bird_dataset\
-    --model_checkpoint=experiments/original_code/Net-epoch=08-validation/accuracy/classification=0.19.ckpt\
-    --outfile=./experiments/original_code/results.csv\
+    --model_checkpoint=./experiments/original_code_adamw/last-v1.ckpt\
+    --outfile=./experiments/original_code_adamw/results.csv\
