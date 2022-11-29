@@ -1,0 +1,15 @@
+# Environment
+.DS_Store
+__pycache__
+wandb
+lightning_logs
+
+# Folders
+3d-computer-vision/*
+ALTEGRAD/*
+computational-statistics/*
+RL/*
+object-recognition/A1/*
+object-recognition/A2/*
+object-recognition/A3/code/bird_dataset/*
+

@@ -1,0 +1,15 @@
+__target__: definitions.BirdClassifierArguments
+training:
+  __target__: definitions.TrainingArguments
+  seed: 42
+  batch_size: 64
+  num_workers: 4
+  learning_rate: 1e-1
+  epochs: 10
+  momentum: 0.5
+
+datasets:
+  __target__: definitions.DatasetArguments
+  train_dir: bird_dataset/train_images/
+  val_dir: bird_dataset/val_images/
+  num_classes: 20
