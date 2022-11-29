@@ -108,38 +108,61 @@ class NetLightningModule(pl.LightningModule):
         return loss
 
 
+class BaseArchitecture(object):
+
+    @staticmethod
+    def get_resnet152(weights):
+        resnet = torchvision.models.resnet152(pretrained=True)
+        num_feat = resnet.fc.in_features
+        layers = list(resnet.children())[:-2]
+        base_model = nn.Sequential(*layers)
+        return base_model, num_feat
+
+    @staticmethod
+    def get_vit():
+        vit = ViTForImageClassification.from_pretrained(
+            'google/vit-base-patch16-224-in21k', num_labels=14)
+        num_feat = vit.classifier.in_features
+        layers = list(vit.children())[:-1]
+        base_model = nn.Sequential(*layers)
+        return base_model, num_feat
+
+    @staticmethod
+    def solve_for(name: str):
+        do = f"get_{name}"
+        if hasattr(BaseArchitecture,
+                   do) and callable(func := getattr(BaseArchitecture, do)):
+            return func(BaseArchitecture)
+
+
 class BirdClassifierLightningModule(pl.LightningModule):
 
-    def __init__(
-        self,
-        num_classes: int = 20,
-        learning_rate: float = 0.001,
-        adam_betas: float = 0.9,
-        adam_eps: float = 0.9,
-        adam_weight_decay: float = 0.9,
-    ):
+    def __init__(self,
+                 num_classes: int = 20,
+                 learning_rate: float = 0.001,
+                 adam_betas: float = 0.9,
+                 adam_eps: float = 0.9,
+                 adam_weight_decay: float = 0.9,
+                 base_model: str = "resnet152"):
         super().__init__()
-        #self.base_model = torchvision.models.resnet152()
-        #checkpoint = torch.load("./pretrained_weights/resnet152-394f9c45.pth")
-        #self.base_model.load_state_dict(checkpoint)
-        self.base_model = ViTForImageClassification.from_pretrained(
-            'google/vit-base-patch16-224-in21k',
-            num_labels=num_classes,
-        )
-        num_ftrs = self.base_model.fc.in_features
-        self.base_model.fc = nn.Identity()
-        #self.classifier = nn.Linear(in_features=num_ftrs,
-        #                            out_features=num_classes)
+        self.base_model, self.num_feat = BaseArchitecture.solve_for(base_model)
+        self.classifier = nn.Linear(in_features=self.num_ftrs,
+                                    out_features=num_classes)
+        nn.init.xavier_normal_(self.classifier.weight.data)
+        torch.nn.init.constant_(self.classifier.bias.data, val=0)
         self.metrics = Accuracy()
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
         self.learning_rate = learning_rate
         self.adam_betas = adam_betas
         self.adam_eps = adam_eps
         self.adam_weight_decay = adam_weight_decay
+        self.base_model = base_model
 
     def forward(self, x):
         x = self.base_model(x)
-        #x = self.classifier(x)
+        if self.base_model == 'vit':
+            x = x['last_hidden_state']
+        x = self.classifier(x)
         return x
 
     def configure_optimizers(self):

@@ -40,6 +40,7 @@ torch==1.13.0
 torchmetrics==0.10.3
 torchvision==0.14.0
 tqdm==4.64.1
+transformers==2.4.1
 typing_extensions==4.4.0
 urllib3==1.26.13
 wandb==0.13.5

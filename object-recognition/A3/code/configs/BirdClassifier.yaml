@@ -11,6 +11,7 @@ training:
     monitor: validation/accuracy/classification
     mode: max
   run_name: BCNN
+  base_model: vit
   seed: 42
   batch_size: 16
   num_workers: 8

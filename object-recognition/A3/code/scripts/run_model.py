@@ -36,12 +36,13 @@ def main():
     print(f"samples = {len(train_loader) * config.training.batch_size}")
 
     # Creating the model
-    model = BCNNLightningModule(
+    model = BirdClassifierLightningModule(
         num_classes=config.datasets.num_classes,
         learning_rate=config.training.learning_rate,
         adam_eps=config.training.adam_eps,
         adam_weight_decay=config.training.adam_weight_decay,
         adam_betas=config.training.adam_betas,
+        base_model=config.training.base_model,
     )
 
     if config.training.lightning_checkpoint is not None:
