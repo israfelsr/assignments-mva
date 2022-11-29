@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torchmetrics import Accuracy
 import torchvision
 import pytorch_lightning as pl
+from transformers import ViTForImageClassification
 
 nclasses = 20
 
@@ -118,13 +119,17 @@ class BirdClassifierLightningModule(pl.LightningModule):
         adam_weight_decay: float = 0.9,
     ):
         super().__init__()
-        self.base_model = torchvision.models.resnet152()
-        checkpoint = torch.load("./pretrained_weights/resnet152-394f9c45.pth")
-        self.base_model.load_state_dict(checkpoint)
+        #self.base_model = torchvision.models.resnet152()
+        #checkpoint = torch.load("./pretrained_weights/resnet152-394f9c45.pth")
+        #self.base_model.load_state_dict(checkpoint)
+        self.base_model = ViTForImageClassification.from_pretrained(
+            'google/vit-base-patch16-224-in21k',
+            num_labels=num_classes,
+        )
         num_ftrs = self.base_model.fc.in_features
         self.base_model.fc = nn.Identity()
-        self.classifier = nn.Linear(in_features=num_ftrs,
-                                    out_features=num_classes)
+        #self.classifier = nn.Linear(in_features=num_ftrs,
+        #                            out_features=num_classes)
         self.metrics = Accuracy()
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
         self.learning_rate = learning_rate
@@ -134,7 +139,7 @@ class BirdClassifierLightningModule(pl.LightningModule):
 
     def forward(self, x):
         x = self.base_model(x)
-        x = self.classifier(x)
+        #x = self.classifier(x)
         return x
 
     def configure_optimizers(self):
