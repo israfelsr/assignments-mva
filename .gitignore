@@ -1,6 +1,6 @@
 # Environment
 .DS_Store
-__pycache__
+__pycache__/
 wandb
 lightning_logs
 
@@ -14,3 +14,4 @@ object-recognition/A2/*
 object-recognition/A3/code/bird_dataset/*
 object-recognition/A3/code/experiments/*
 object-recognition/A3/code/pretrained_weights/*
+geometric-data-analysis/*

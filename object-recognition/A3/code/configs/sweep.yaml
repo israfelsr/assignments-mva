@@ -1,0 +1,21 @@
+command:
+  - ${env}
+  - ${interpreter}
+  - ${program}
+  - ${args}
+method: grid
+metric:
+  goal: maximize
+  name: validation/accuracy/classification
+parameters:
+  batch_size:
+    distribution: categorical
+    values:
+      - 16
+      - 32
+  learning_rate:
+    values:
+      - 2e-4
+      - 1e-4
+      - 1e-3
+program: scrips/run_model.py

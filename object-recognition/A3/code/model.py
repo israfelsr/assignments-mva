@@ -111,7 +111,7 @@ class NetLightningModule(pl.LightningModule):
 class BaseArchitecture(object):
 
     @staticmethod
-    def get_resnet152(weights):
+    def get_resnet152():
         resnet = torchvision.models.resnet152(pretrained=True)
         num_feat = resnet.fc.in_features
         layers = list(resnet.children())[:-2]
@@ -122,7 +122,7 @@ class BaseArchitecture(object):
     def get_vit():
         vit = ViTForImageClassification.from_pretrained(
             'google/vit-base-patch16-224-in21k', num_labels=14)
-        num_feat = vit.classifier.in_features
+        num_feat = vit.classifier.in_features * 197
         layers = list(vit.children())[:-1]
         base_model = nn.Sequential(*layers)
         return base_model, num_feat
@@ -130,9 +130,9 @@ class BaseArchitecture(object):
     @staticmethod
     def solve_for(name: str):
         do = f"get_{name}"
-        if hasattr(BaseArchitecture,
-                   do) and callable(func := getattr(BaseArchitecture, do)):
-            return func(BaseArchitecture)
+        if hasattr(BaseArchitecture, do) and callable(
+                getattr(BaseArchitecture, do)):
+            return getattr(BaseArchitecture, do)()
 
 
 class BirdClassifierLightningModule(pl.LightningModule):
@@ -145,7 +145,7 @@ class BirdClassifierLightningModule(pl.LightningModule):
                  adam_weight_decay: float = 0.9,
                  base_model: str = "resnet152"):
         super().__init__()
-        self.base_model, self.num_feat = BaseArchitecture.solve_for(base_model)
+        self.base_model, self.num_ftrs = BaseArchitecture.solve_for(base_model)
         self.classifier = nn.Linear(in_features=self.num_ftrs,
                                     out_features=num_classes)
         nn.init.xavier_normal_(self.classifier.weight.data)
@@ -156,13 +156,14 @@ class BirdClassifierLightningModule(pl.LightningModule):
         self.adam_betas = adam_betas
         self.adam_eps = adam_eps
         self.adam_weight_decay = adam_weight_decay
-        self.base_model = base_model
+        self.base_model_name = base_model
 
     def forward(self, x):
         x = self.base_model(x)
-        if self.base_model == 'vit':
+        if self.base_model_name == 'vit':
             x = x['last_hidden_state']
-        x = self.classifier(x)
+            x = x.view(x.shape[0], -1)
+        print(x.shape)
         return x
 
     def configure_optimizers(self):
@@ -211,26 +212,22 @@ class BirdClassifierLightningModule(pl.LightningModule):
 
 class BCNNLightningModule(pl.LightningModule):
 
-    def __init__(
-        self,
-        num_classes: int = 20,
-        learning_rate: float = 0.001,
-        adam_betas: float = 0.9,
-        adam_eps: float = 0.9,
-        adam_weight_decay: float = 0.9,
-    ):
+    def __init__(self,
+                 num_classes: int = 20,
+                 learning_rate: float = 0.001,
+                 adam_betas: float = 0.9,
+                 adam_eps: float = 0.9,
+                 adam_weight_decay: float = 0.9,
+                 base_model: str = 'vit'):
         super().__init__()
-        resnet = torchvision.models.resnet152()
-        checkpoint = torch.load("./pretrained_weights/resnet152-394f9c45.pth")
-        resnet.load_state_dict(checkpoint)
-        self.num_ftrs = resnet.fc.in_features
-        layers = list(resnet.children())[:-2]
-        self.base_model = nn.Sequential(*layers)
+        self.base_model, self.num_ftrs = BaseArchitecture.solve_for(base_model)
+        self.classifier = nn.Linear(in_features=self.num_ftrs**2,
+                                    out_features=num_classes)
+        nn.init.xavier_normal_(self.classifier.weight.data)
+        torch.nn.init.constant_(self.classifier.bias.data, val=0)
         self.classifier = nn.Linear(in_features=self.num_ftrs**2,
                                     out_features=num_classes)
         self.dropout = nn.Dropout(0.5)
-        nn.init.xavier_normal_(self.classifier.weight.data)
-        torch.nn.init.constant_(self.classifier.bias.data, val=0)
 
         self.metrics = Accuracy()
         self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
@@ -243,7 +240,7 @@ class BCNNLightningModule(pl.LightningModule):
         x = self.base_model(x)
         x = x.view(x.shape[0], self.num_ftrs, -1)
         x = self.dropout(x)
-        x = torch.bmm(x, torch.transpose(x, 1, 2)) / (4)
+        x = torch.bmm(x, torch.transpose(x, 1, 2)) / (197)
         x = x.view(x.shape[0], self.num_ftrs**2)
         x = torch.sqrt(x + 1e-5)
         x = F.normalize(x)
