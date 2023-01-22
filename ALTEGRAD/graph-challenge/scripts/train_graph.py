@@ -12,7 +12,7 @@ from graph_challenge.dataset.datasets import (GraphProteinDataset,
 
 def main():
     # Load Data
-    epochs = 50
+    epochs = 60
     batch_size = 64
     n_hidden = 64
     n_input = 86
@@ -26,7 +26,7 @@ def main():
     seed_everything(42, workers=True)
 
     # Create Datamodules
-    train_set, test_set = load_data(root)
+    train_set, test_set, _ = load_data(root)
     train_set, val_set = split_dataset(train_set)
     adj_train, features_train, _, _, labels_train = train_set
     adj_val, features_val, _, _, labels_val = val_set
@@ -49,13 +49,12 @@ def main():
                                learning_rate=learning_rate)
 
     # Train
-    trainer = Trainer(
-        accelerator="cpu",
-        max_epochs=epochs,
-        #max_epochs=1,
-        logger=wandb_logger,
-        #callbacks=[checkpoint_callback],
-    )
+    trainer = Trainer(accelerator="cpu",
+                      max_epochs=epochs,
+                      logger=wandb_logger,
+                      default_root_dir="../logs/"
+                      #callbacks=[checkpoint_callback],
+                      )
     trainer.fit(model,
                 train_dataloaders=train_loader,
                 val_dataloaders=val_loader)

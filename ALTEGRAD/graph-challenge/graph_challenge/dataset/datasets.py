@@ -14,17 +14,19 @@ class GraphProteinDataset(Dataset):
     def __init__(self, adj, features, labels=None):
         self.adj = adj
         self.features = features
-        if labels is not None:
-            self.labels = labels
+        self.labels = labels
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.features)
 
     def __getitem__(self, idx):
         adj = self.adj[idx]
         features = self.features[idx]
-        y = self.labels[idx]
-        return adj, features, y
+        if self.labels is not None:
+            y = self.labels[idx]
+            return adj, features, y
+        else:
+            return adj, features
 
 
 class ProteinDataset(Dataset):

@@ -87,7 +87,7 @@ def split_testset(data_dir, data):
                 sequences_train.append(sequences[i])
     train_set = (np.array(adj_train), np.array(features_train),
                  np.array(edges_train), sequences_train, np.array(y_train))
-    test_set = (adj_train, features_test, edges_test, sequences_test,
+    test_set = (adj_test, features_test, edges_test, sequences_test,
                 proteins_test)
     return train_set, test_set, proteins_test
 

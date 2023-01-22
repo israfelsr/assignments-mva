@@ -25,10 +25,10 @@ class GraphNeuralNetwork(pl.LightningModule):
     ):
         super(GraphNeuralNetwork, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc2 = nn.Linear(64, 128)
+        self.fc3 = nn.Linear(128, 64)
         self.fc4 = nn.Linear(hidden_dim, output_dim)
-        self.bn = nn.BatchNorm1d(hidden_dim)
+        self.bn = nn.BatchNorm1d(128)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
