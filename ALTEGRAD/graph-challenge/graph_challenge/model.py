@@ -152,8 +152,6 @@ class GraphSequenceModel(pl.LightningModule):
         seq_output = self.model(**seq)
         seq_embeddings = torch.sum(seq_output["last_hidden_state"], dim=1)
 
-        print(seq_embeddings.shape)
-
         # first message passing layer
         x = self.fc1(x_in)
         x = self.relu(torch.mm(adj, x))
