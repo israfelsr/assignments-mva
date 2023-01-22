@@ -162,12 +162,10 @@ class GraphProteinDataModule(LightningDataModule):
         model_name: str,
         collate_fn: object = collate_protein_batch,
         batch_size: int = 64,
-        num_workers: int = 2,
         train_split: int = 0.8,
     ):
         super().__init__()
         self.batch_size = batch_size
-        self.num_workers = num_workers
         self.train_split = train_split
         self.data_dir = data_dir
         self.collate_fn = collate_fn
@@ -190,17 +188,14 @@ class GraphProteinDataModule(LightningDataModule):
         return DataLoader(self.train_gen,
                           batch_size=self.batch_size,
                           shuffle=True,
-                          collate_fn=self.collate_fn,
-                          num_workers=self.num_workers)
+                          collate_fn=self.collate_fn)
 
     def val_dataloader(self, ):
         return DataLoader(self.val_gen,
                           batch_size=self.batch_size,
-                          collate_fn=self.collate_fn,
-                          num_workers=self.num_workers)
+                          collate_fn=self.collate_fn)
 
     def test_dataloader(self, ):
         return DataLoader(self.test_gen,
                           batch_size=self.batch_size,
-                          collate_fn=collate_protein_test_batch,
-                          num_workers=self.num_workers)
+                          collate_fn=collate_protein_test_batch)
