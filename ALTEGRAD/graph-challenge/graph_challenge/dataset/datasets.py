@@ -116,6 +116,42 @@ def collate_protein_batch(batch):
     return batch
 
 
+def collate_protein_test_batch(batch):
+    adj_batch = list()
+    features_batch = list()
+    idx_batch = list()
+
+    # seq
+    input_ids_batch = list()
+    attention_mask_batch = list()
+    token_type_ids = list()
+
+    for t, (adj, features, _, seq, _) in enumerate(batch):
+
+        input_ids_batch.append(seq["input_ids"])
+        attention_mask_batch.append(seq["attention_mask"])
+        token_type_ids.append(seq["token_type_ids"])
+
+        n = adj.shape[0]
+        adj_batch.append(adj + sp.identity(n))
+        features_batch.append(features)
+        idx_batch.extend([t] * n)
+
+    adj_batch = sp.block_diag(adj_batch)
+    features_batch = np.vstack(features_batch)
+    batch = {
+        'x': torch.FloatTensor(features_batch),
+        'adj': sparse_mx_to_torch_sparse_tensor(adj_batch),
+        'index': torch.LongTensor(idx_batch),
+        'seq': {
+            'input_ids': torch.tensor(input_ids_batch),
+            'attention_mask': torch.tensor(attention_mask_batch),
+            'token_type_ids': torch.tensor(token_type_ids)
+        }
+    }
+    return batch
+
+
 class GraphProteinDataModule(LightningDataModule):
 
     def __init__(
@@ -124,7 +160,7 @@ class GraphProteinDataModule(LightningDataModule):
         model_name: str,
         collate_fn: object = collate_protein_batch,
         batch_size: int = 64,
-        num_workers: int = 8,
+        num_workers: int = 2,
         train_split: int = 0.8,
     ):
         super().__init__()
@@ -137,29 +173,32 @@ class GraphProteinDataModule(LightningDataModule):
         self.seq_transform = BertTokenizerFast.from_pretrained(
             model_name, do_lower_case=False)
 
-    def setup(self, ):
-        train_set, test_set = load_data(self.data_dir)
+    def setup(self, stage=None):
+        train_set, test_set, proteins_test = load_data(self.data_dir)
         train_set, val_set = split_dataset(train_set, self.train_split)
-
         self.train_gen = ProteinDataset(train_set,
                                         seq_tokenizer=self.seq_transform)
-        self.val_gen = ProteinDataset(test_set,
+        self.val_gen = ProteinDataset(val_set,
                                       seq_tokenizer=self.seq_transform)
-        self.test_gen = ProteinDataset(val_set,
+        self.test_gen = ProteinDataset(test_set,
                                        seq_tokenizer=self.seq_transform)
+        self.proteins_test = proteins_test
 
     def train_dataloader(self, ):
         return DataLoader(self.train_gen,
                           batch_size=self.batch_size,
                           shuffle=True,
-                          collate_fn=self.collate_fn)
+                          collate_fn=self.collate_fn,
+                          num_workers=self.num_workers)
 
     def val_dataloader(self, ):
         return DataLoader(self.val_gen,
                           batch_size=self.batch_size,
-                          collate_fn=self.collate_fn)
+                          collate_fn=self.collate_fn,
+                          num_workers=self.num_workers)
 
     def test_dataloader(self, ):
         return DataLoader(self.test_gen,
                           batch_size=self.batch_size,
-                          collate_fn=self.collate_fn)
+                          collate_fn=collate_protein_test_batch,
+                          num_workers=self.num_workers)

@@ -32,8 +32,6 @@ def main():
     )
     datamodule.setup()
 
-    loader = datamodule.train_dataloader()
-
     # Create Model
     model = GraphSequenceModel(input_dim=n_input,
                                output_dim=n_class,
@@ -47,6 +45,7 @@ def main():
         max_epochs=epochs,
         #max_epochs=1,
         logger=wandb_logger,
+        default_root_dir="../logs/"
         #callbacks=[checkpoint_callback],
     )
     trainer.fit(model, datamodule)

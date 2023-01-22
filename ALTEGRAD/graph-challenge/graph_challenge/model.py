@@ -145,11 +145,14 @@ class GraphSequenceModel(pl.LightningModule):
     def forward(self, batch):
         x_in = batch["x"]
         adj = batch["adj"]
-        idx = batch["idx"]
+        idx = batch["index"]
         seq = batch["seq"]
 
         # sequence embedings
-        seq_embeddings = torch.sum(self.model(**seq))
+        seq_output = self.model(**seq)
+        seq_embeddings = torch.sum(seq_output["last_hidden_state"], dim=1)
+
+        print(seq_embeddings.shape)
 
         # first message passing layer
         x = self.fc1(x_in)
@@ -171,7 +174,7 @@ class GraphSequenceModel(pl.LightningModule):
         # mlp to produce output
         out = self.relu(self.fc3(out))
         out = self.dropout(out)
-        out = torch.cat((out, seq_embeddings))
+        out = torch.cat((out, seq_embeddings), dim=1)
         out = self.relu(self.fc4(out))
         out = self.fc5(out)
 

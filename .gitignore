@@ -9,6 +9,7 @@ lightning_logs
 3d-computer-vision/*
 ALTEGRAD/Labs/*
 ALTEGRAD/graph-challenge/data.nosync/*
+ALTEGRAD/graph-challenge/logs.nosync/*
 computational-statistics/*
 RL/*
 object-recognition/A1/*

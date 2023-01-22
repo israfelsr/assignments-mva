@@ -52,9 +52,9 @@ def load_data(data_dir, max_length=None):
 
     adj = [normalize_adjacency(A) for A in adj]
 
-    train_set, test_set = split_testset(
+    train_set, test_set, protein_test = split_testset(
         data_dir, (adj, features, edge_features, sequences))
-    return train_set, test_set
+    return train_set, test_set, protein_test
 
 
 def split_testset(data_dir, data):
@@ -89,7 +89,7 @@ def split_testset(data_dir, data):
                  np.array(edges_train), sequences_train, np.array(y_train))
     test_set = (adj_train, features_test, edges_test, sequences_test,
                 proteins_test)
-    return train_set, test_set
+    return train_set, test_set, proteins_test
 
 
 def normalize_adjacency(A):

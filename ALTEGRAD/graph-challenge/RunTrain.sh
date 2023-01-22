@@ -1,3 +1,2 @@
 export PYTHONPATH=$(pwd)
-python scripts/train.py \ 
-    - data_dir ../data.nosync
+python /content/assignments-mva/ALTEGRAD/graph-challenge/scripts/train_graph_sequence.py
