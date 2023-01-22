@@ -1,12 +1,14 @@
 # Environment
 .DS_Store
 __pycache__/
-wandb
+wandb/
 lightning_logs
+.ipynb_checkpoints/
 
 # Folders
 3d-computer-vision/*
-ALTEGRAD/*
+ALTEGRAD/Labs/*
+ALTEGRAD/graph-challenge/data.nosync/*
 computational-statistics/*
 RL/*
 object-recognition/A1/*
@@ -14,4 +16,8 @@ object-recognition/A2/*
 object-recognition/A3/code/bird_dataset/*
 object-recognition/A3/code/experiments/*
 object-recognition/A3/code/pretrained_weights/*
+object-recognition/project/*
 geometric-data-analysis/*
+generative-models/*
+deep-rl/
+temporal-series/
