@@ -216,3 +216,198 @@ class GraphSequenceModel(pl.LightningModule):
                  sync_dist=True,
                  batch_size=64)
         return loss
+
+
+class GraphEdgesNetwork(pl.LightningModule):
+
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        dropout: int,
+        hidden_dim: int = 64,
+        learning_rate: float = 0.001,
+        momentum: float = 0.9,
+        adam_betas: float = 0.9,
+        adam_eps: float = 0.9,
+        adam_weight_decay: float = 0.9,
+    ):
+        super(GraphEdgesNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(64, 128)
+        self.fc3 = nn.Linear(256, 128)
+        self.fc4 = nn.Linear(128, output_dim)
+        self.bn = nn.BatchNorm1d(128)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
+
+        self.edge_fc1 = nn.Linear(5, 64)
+        self.edge_fc2 = nn.Linear(64, 128)
+        self.edge_fc3 = nn.Linear(128, 128)
+
+        self.metrics = Accuracy(task="multiclass", num_classes=output_dim)
+        self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.adam_betas = [adam_betas, adam_betas]
+        self.adam_eps = adam_eps
+        self.adam_weight_decay = adam_weight_decay
+
+    def forward(self, x_in, adj, edges, idx):
+        # first message passing layer
+        x = self.fc1(x_in)
+        x = self.relu(torch.mm(adj, x))
+        x = self.dropout(x)
+
+        # second message passing layer
+        x = self.fc2(x)
+        x = self.relu(torch.mm(adj, x))
+
+        # sum aggregator
+        idx = idx.unsqueeze(1).repeat(1, x.size(1))
+        out = torch.zeros(torch.max(idx) + 1, x.size(1)).to(x_in.device)
+        out = out.scatter_add_(0, idx, x)
+
+        # batch normalization layer
+        out = self.bn(out)
+
+        # FC edges
+        edges = self.relu(self.edge_fc1(edges))
+        edges = self.dropout(edges)
+        edges = self.relu(self.edge_fc2(edges))
+        edges = self.dropout(edges)
+        edges = self.relu(self.edge_fc3(edges))
+
+        # mlp to produce output
+        out = torch.cat((out, edges), dim=1)
+        out = self.relu(self.fc3(out))
+        out = self.dropout(out)
+        out = self.fc4(out)
+        return F.log_softmax(out, dim=1)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+
+    def training_step(self, batch, batch_idx):
+        scores = self.forward(batch['x'], batch['adj'], batch["edges"],
+                              batch['index'])
+        loss = self.loss(scores, batch['y'])
+        accuracy = self.metrics(scores, batch['y'])
+
+        self.log("train/losses/classification",
+                 loss,
+                 prog_bar=True,
+                 logger=True,
+                 batch_size=64)
+        self.log("train/accuracy/classification",
+                 accuracy,
+                 prog_bar=True,
+                 logger=True,
+                 sync_dist=True,
+                 batch_size=64)
+        return loss
+
+
+class MultiGNN(pl.LightningModule):
+
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        dropout: int,
+        hidden_dim: int = 64,
+        learning_rate: float = 0.001,
+        momentum: float = 0.9,
+        adam_betas: float = 0.9,
+        adam_eps: float = 0.9,
+        adam_weight_decay: float = 0.9,
+    ):
+        super(MultiGNN, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.fc2 = nn.Linear(64, 128)
+        self.fc3 = nn.Linear(128, 128)
+        self.fc4 = nn.Linear(256, 64)
+        self.fc5 = nn.Linear(64, output_dim)
+        self.bn = nn.BatchNorm1d(128)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
+
+        self.metrics = Accuracy(task="multiclass", num_classes=output_dim)
+        self.loss = torch.nn.CrossEntropyLoss(reduction='mean')
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.adam_betas = [adam_betas, adam_betas]
+        self.adam_eps = adam_eps
+        self.adam_weight_decay = adam_weight_decay
+
+    def GNN(self, x_in, adj, idx):
+        # first message passing layer
+        x = self.fc1(x_in)
+        x = self.relu(torch.mm(adj, x))
+        x = self.dropout(x)
+
+        # second message passing layer
+        x = self.fc2(x)
+        x = self.relu(torch.mm(adj, x))
+
+        # sum aggregator
+        idx = idx.unsqueeze(1).repeat(1, x.size(1))
+        out = torch.zeros(torch.max(idx) + 1, x.size(1)).to(x_in.device)
+        out = out.scatter_add_(0, idx, x)
+
+        # batch normalization layer
+        out = self.bn(out)
+
+        # mlp to produce output
+        out = self.relu(self.fc3(out))
+        out = self.dropout(out)
+        return out
+
+    def forward(self, x_in, adj, adj_dist, idx):
+        adj_out = self.GNN(x_in, adj, idx)
+        dist_out = self.GNN(x_in, adj_dist, idx)
+        out = torch.cat((adj_out, dist_out), dim=1)
+        out = self.relu(self.fc4(out))
+        out = self.fc5(out)
+        return F.log_softmax(out, dim=1)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+
+    def training_step(self, batch, batch_idx):
+        scores = self.forward(batch['x'], batch['adj'], batch['adj_dist'],
+                              batch['index'])
+        loss = self.loss(scores, batch['y'])
+        accuracy = self.metrics(scores, batch['y'])
+
+        self.log("train/losses/classification",
+                 loss,
+                 prog_bar=True,
+                 logger=True,
+                 batch_size=64)
+        self.log("train/accuracy/classification",
+                 accuracy,
+                 prog_bar=True,
+                 logger=True,
+                 sync_dist=True,
+                 batch_size=64)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        scores = self.forward(batch['x'], batch['adj'], batch['adj_dist'],
+                              batch['index'])
+        loss = self.loss(scores, batch['y'])
+        accuracy = self.metrics(scores, batch['y'])
+
+        self.log("val/losses/classification",
+                 loss,
+                 prog_bar=True,
+                 logger=True,
+                 batch_size=64)
+        self.log("val/accuracy/classification",
+                 accuracy,
+                 prog_bar=True,
+                 logger=True,
+                 sync_dist=True,
+                 batch_size=64)
+        return loss

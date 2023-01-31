@@ -26,18 +26,25 @@ def load_data(data_dir, max_length=None):
                    delimiter=",")
     edge_attr = np.loadtxt(os.path.join(data_dir, "edge_attributes.txt"),
                            delimiter=",")
-    edge_attr = np.vstack((edge_attr, edge_attr))
-    edge_attr = edge_attr[idx_sort, :]
-    edge_attr = edge_attr[idx_unique, :]
+
+    A_dist = sp.csr_matrix((edge_attr[:, 0], (edges[:, 0], edges[:, 1])),
+                           shape=(graph_indicator.size, graph_indicator.size))
+
+    #edge_attr = np.vstack((edge_attr, edge_attr))
+    #edge_attr = edge_attr[idx_sort, :]
+    #edge_attr = edge_attr[idx_unique, :]
 
     adj = []
     features = []
-    edge_features = []
+    #edge_features = []
+    adj_dist = []
     idx_n = 0
     idx_m = 0
     for i in range(graph_size.size):
         adj.append(A[idx_n:idx_n + graph_size[i], idx_n:idx_n + graph_size[i]])
-        edge_features.append(edge_attr[idx_m:idx_m + adj[i].nnz, :])
+        adj_dist.append(A_dist[idx_n:idx_n + graph_size[i],
+                               idx_n:idx_n + graph_size[i]])
+        #edge_features.append(edge_attr[idx_m:idx_m + adj[i].nnz, :])
         features.append(x[idx_n:idx_n + graph_size[i], :])
         idx_n += graph_size[i]
         idx_m += adj[i].nnz
@@ -51,9 +58,10 @@ def load_data(data_dir, max_length=None):
         sequences = [list(seq)[:max_length - 2] for seq in sequences]
 
     adj = [normalize_adjacency(A) for A in adj]
+    adj_dist = [normalize_adjacency(A) for A in adj_dist]
 
     train_set, test_set, protein_test = split_testset(
-        data_dir, (adj, features, edge_features, sequences))
+        data_dir, (adj, features, adj_dist, sequences))
     return train_set, test_set, protein_test
 
 
@@ -136,3 +144,17 @@ def split_dataset(data, percentage=0.8):
                 labels_test)
 
     return train_set, test_set
+
+
+def split_dataset(features: np.array,
+                  labels: np.array,
+                  percentage: float = 0.8):
+    
+    mask = np.random.rand(len(labels)) < percentage
+
+    X_train = features[mask]
+    y_train = labels[mask]
+    X_test = features[~mask]
+    y_test = labels[~mask]
+
+    return X_train, y_train, X_test, y_test

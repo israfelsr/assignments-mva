@@ -11,10 +11,11 @@ from graph_challenge.dataset.utils import *
 
 class GraphProteinDataset(Dataset):
 
-    def __init__(self, adj, features, labels=None):
+    def __init__(self, adj, features, edges, labels=None):
         self.adj = adj
         self.features = features
         self.labels = labels
+        self.edges = edges
 
     def __len__(self):
         return len(self.features)
@@ -22,11 +23,12 @@ class GraphProteinDataset(Dataset):
     def __getitem__(self, idx):
         adj = self.adj[idx]
         features = self.features[idx]
+        edges = self.edges[idx]
         if self.labels is not None:
             y = self.labels[idx]
-            return adj, features, y
+            return adj, features, edges, y
         else:
-            return adj, features
+            return adj, features, edges
 
 
 class ProteinDataset(Dataset):
@@ -62,19 +64,25 @@ class ProteinDataset(Dataset):
 def collate_graph_batch(batch):
     adj_batch = list()
     features_batch = list()
+    #edges_batch = list()
+    adj_dist_batch = list()
     idx_batch = list()
     y_batch = list()
-    for t, (adj, features, y) in enumerate(batch):
+    for t, (adj, features, adj_dist, y) in enumerate(batch):
         n = adj.shape[0]
         adj_batch.append(adj + sp.identity(n))
         features_batch.append(features)
+        #edges_batch.append(np.sum(edges, axis=0))
+        adj_dist_batch.append(adj_dist + sp.identity(n))
         idx_batch.extend([t] * n)
         y_batch.append(y)
     adj_batch = sp.block_diag(adj_batch)
     features_batch = np.vstack(features_batch)
+    adj_dist_batch = sp.block_diag(adj_dist_batch)
     return {
         'x': torch.FloatTensor(features_batch),
         'adj': sparse_mx_to_torch_sparse_tensor(adj_batch),
+        'adj_dist': sparse_mx_to_torch_sparse_tensor(adj_dist_batch),
         'index': torch.LongTensor(idx_batch),
         'y': torch.LongTensor(y_batch),
     }
