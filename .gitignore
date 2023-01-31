@@ -2,7 +2,7 @@
 .DS_Store
 __pycache__/
 wandb/
-lightning_logs
+lightning_logs/
 .ipynb_checkpoints/
 
 # Folders
@@ -23,4 +23,5 @@ geometric-data-analysis/*
 generative-models/*
 deep-rl/
 temporal-series/
-dl-in-practice/
+dl-in-practice/tp-1/USPS/
+dl-in-practice/tp-1/dl-practice-tp1/
