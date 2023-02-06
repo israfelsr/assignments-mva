@@ -13,8 +13,6 @@ ALTEGRAD/graph-challenge/logs.nosync/*
 ALTEGRAD/graph-challenge/altegrad
 computational-statistics/*
 RL/*
-object-recognition/A1/*
-object-recognition/A2/*
 object-recognition/A3/code/bird_dataset/*
 object-recognition/A3/code/experiments/*
 object-recognition/A3/code/pretrained_weights/*
