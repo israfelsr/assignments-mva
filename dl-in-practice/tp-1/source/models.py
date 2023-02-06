@@ -94,6 +94,27 @@ class SimpleConvModel(pl.LightningModule):
                  batch_size=self.batch_size)
         return loss
 
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+
+        scores = self.forward(x)
+        loss = self.loss(scores, y)
+        _, predicted = torch.max(scores.data, 1)
+        accuracy = self.metrics(predicted, torch.argmax(y, dim=1))
+
+        self.log("loss/test",
+                 loss,
+                 prog_bar=True,
+                 logger=True,
+                 batch_size=self.batch_size)
+        self.log("accuracy/test",
+                 accuracy,
+                 prog_bar=True,
+                 logger=True,
+                 sync_dist=True,
+                 batch_size=self.batch_size)
+        return loss
+
 
 class LinearModel(nn.Module):
 

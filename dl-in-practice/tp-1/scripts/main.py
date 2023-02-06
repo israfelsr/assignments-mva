@@ -29,6 +29,16 @@ def main(args):
         ]),
         download=False)
 
+    test_set = torchvision.datasets.USPS(
+        root=args.data_dir,
+        train=False,
+        transform=transforms.ToTensor(),
+        target_transform=torchvision.transforms.Compose([
+            lambda x: torch.LongTensor([x]), lambda x: F.one_hot(x, 10),
+            lambda x: x.squeeze(), lambda x: x.type(torch.float)
+        ]),
+        download=False)
+
     train_gen, val_gen = random_split(
         dataset, [6000, 1291], generator=torch.Generator().manual_seed(42))
 
@@ -42,6 +52,11 @@ def main(args):
     val_loader = DataLoader(val_gen,
                             batch_size=args.batch_size,
                             drop_last=True)
+
+    test_loader = DataLoader(
+        test_set,
+        batch_size=args.batch_size,
+    )
 
     # Model
     model = SimpleConvModel(output_dim=args.output_dim,
@@ -59,9 +74,13 @@ def main(args):
                       max_epochs=args.epochs,
                       logger=wandb_logger,
                       default_root_dir="../logs/")
-    trainer.fit(model,
-                train_dataloaders=train_loader,
-                val_dataloaders=val_loader)
+    trainer.fit(
+        model,
+        train_dataloaders=train_loader,
+        val_dataloaders=val_loader,
+    )
+
+    trainer.test(dataloaders=test_loader)
 
 
 if __name__ == "__main__":
